@@ -77,6 +77,52 @@ def yt_rss():
     return " | ".join(f"{i}: {t}" for i, t in list(zip(ids, titles))[:3])
 
 
+def _remember(vid, title):
+    if "id" not in latest_video:
+        latest_video["id"], latest_video["title"] = vid, title
+
+
+def yt_streams_page():
+    _, body = fetch(f"https://www.youtube.com/channel/{CHANNEL_ID}/streams",
+                    headers={"Accept-Language": "zh-TW"})
+    text = body.decode("utf-8", "replace")
+    pairs = re.findall(
+        r'"videoId":"([\w-]{11})".{0,1500}?"title":\{"runs":\[\{"text":"([^"]+)"', text)
+    seen, out = set(), []
+    for vid, title in pairs:
+        if vid not in seen:
+            seen.add(vid)
+            out.append((vid, title))
+    if not out:
+        raise RuntimeError(f"頁面沒有影片清單（{len(body)} bytes, consent={'consent.youtube' in text}）")
+    _remember(*out[0])
+    return " | ".join(f"{v}: {t}" for v, t in out[:3])
+
+
+def yt_live_page():
+    _, body = fetch(f"https://www.youtube.com/channel/{CHANNEL_ID}/live",
+                    headers={"Accept-Language": "zh-TW"})
+    text = body.decode("utf-8", "replace")
+    m = re.search(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([\w-]{11})', text)
+    t = re.search(r"<title>([^<]*)</title>", text)
+    if not m:
+        raise RuntimeError(f"沒有指向影片（{len(body)} bytes）")
+    _remember(m.group(1), t.group(1) if t else "")
+    return f"{m.group(1)}: {t.group(1) if t else ''}"
+
+
+def gemini_models():
+    _, body = fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
+                    headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]})
+    names = [m["name"].split("/")[-1] for m in json.loads(body).get("models", [])
+             if "generateContent" in m.get("supportedGenerationMethods", [])]
+    flash = [n for n in names if "flash" in n and "image" not in n and "tts" not in n
+             and "live" not in n and "lite" not in n and "preview" not in n and "exp" not in n]
+    if flash and not os.environ.get("GEMINI_MODEL"):
+        os.environ["GEMINI_MODEL"] = sorted(flash)[-1]
+    return f"選用={os.environ.get('GEMINI_MODEL')} / 可用 flash 系列={sorted(flash)}"
+
+
 def yt_watch():
     status, body = fetch(f"https://www.youtube.com/watch?v={latest_video['id']}",
                          headers={"Accept-Language": "zh-TW"})
@@ -106,6 +152,10 @@ check("證交所即時報價 MIS", mis)
 check("證交所 OpenAPI 前日收盤", openapi)
 check("期交所行情表", taifex)
 check("YouTube 頻道 RSS", yt_rss)
+check("YouTube 頻道直播清單頁", yt_streams_page)
+check("YouTube 頻道 /live 頁", yt_live_page)
+if os.environ.get("GEMINI_API_KEY"):
+    check("Gemini 可用模型", gemini_models)
 if latest_video:
     check("YouTube 影片頁", yt_watch)
     if os.environ.get("GEMINI_API_KEY"):
