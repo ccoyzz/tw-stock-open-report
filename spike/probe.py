@@ -88,7 +88,7 @@ def yt_streams_page():
     text = body.decode("utf-8", "replace")
     out, seen = [], set()
     # 標題格式如 2026/11/16(一)...【早晨財經速解讀】；往前找最近的影片代號
-    for m in re.finditer(r'(20\d\d/\d{1,2}/\d{1,2}\(.\)[^"\]{3,150})', text):
+    for m in re.finditer(r'(20\d\d/\d{1,2}/\d{1,2}\(.\)[^"\\]{3,150})', text):
         before = text[max(0, m.start() - 3000):m.start()]
         ids = re.findall(r'"(?:videoId|contentId)":"([\w-]{11})"', before)
         if ids and ids[-1] not in seen:
