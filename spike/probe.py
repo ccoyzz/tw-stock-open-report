@@ -102,6 +102,20 @@ def yt_streams_page():
     return " | ".join(f"{v}: {t}" for v, t in out[:3])
 
 
+def yt_data_api():
+    key = os.environ.get("YOUTUBE_API_KEY") or os.environ["GEMINI_API_KEY"]
+    uploads = "UU" + CHANNEL_ID[2:]
+    _, body = fetch("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet"
+                    f"&maxResults=5&playlistId={uploads}", headers={"x-goog-api-key": key})
+    items = json.loads(body).get("items", [])
+    out = [(i["snippet"]["resourceId"]["videoId"], i["snippet"]["title"],
+            len(i["snippet"].get("description", ""))) for i in items]
+    if not out:
+        raise RuntimeError("沒有影片")
+    latest_video["id"], latest_video["title"] = out[0][0], out[0][1]
+    return " | ".join(f"{v}: {t}（說明 {n} 字）" for v, t, n in out[:3])
+
+
 def yt_live_page():
     _, body = fetch(f"https://www.youtube.com/channel/{CHANNEL_ID}/live",
                     headers={"Accept-Language": "zh-TW"})
@@ -155,9 +169,8 @@ check("證交所即時報價 MIS", mis)
 check("證交所 OpenAPI 前日收盤", openapi)
 check("期交所行情表", taifex)
 check("YouTube 頻道 RSS", yt_rss)
-check("YouTube 頻道直播清單頁", yt_streams_page)
-check("YouTube 頻道 /live 頁", yt_live_page)
 if os.environ.get("GEMINI_API_KEY"):
+    check("YouTube Data API（官方）", yt_data_api)
     check("Gemini 可用模型", gemini_models)
 if latest_video:
     check("YouTube 影片頁", yt_watch)
