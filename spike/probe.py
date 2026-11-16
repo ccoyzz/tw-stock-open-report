@@ -111,7 +111,7 @@ def yt_data_api():
     note = f"提示詞裡的頻道代號 {CHANNEL_ID} " + (
         f"存在（{known[0]['snippet']['title']}）" if known else "不存在")
     channel = CHANNEL_ID
-    if not known:
+    if not known or "皓角" not in known[0]["snippet"]["title"]:
         _, body = fetch(base + "search?part=snippet&type=channel&maxResults=3&q="
                         + urllib.parse.quote("游庭皓的財經皓角") + k)
         found = json.loads(body).get("items", [])
