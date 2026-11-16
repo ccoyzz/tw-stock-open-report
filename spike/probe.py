@@ -106,7 +106,7 @@ def yt_data_api():
     key = os.environ.get("YOUTUBE_API_KEY") or os.environ["GEMINI_API_KEY"]
     uploads = "UU" + CHANNEL_ID[2:]
     _, body = fetch("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet"
-                    f"&maxResults=5&playlistId={uploads}", headers={"x-goog-api-key": key})
+                    f"&maxResults=5&playlistId={uploads}&key={urllib.parse.quote(key)}")
     items = json.loads(body).get("items", [])
     out = [(i["snippet"]["resourceId"]["videoId"], i["snippet"]["title"],
             len(i["snippet"].get("description", ""))) for i in items]
