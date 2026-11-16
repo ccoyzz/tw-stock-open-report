@@ -86,15 +86,18 @@ def yt_streams_page():
     _, body = fetch(f"https://www.youtube.com/channel/{CHANNEL_ID}/streams",
                     headers={"Accept-Language": "zh-TW"})
     text = body.decode("utf-8", "replace")
-    pairs = re.findall(
-        r'"videoId":"([\w-]{11})".{0,1500}?"title":\{"runs":\[\{"text":"([^"]+)"', text)
-    seen, out = set(), []
-    for vid, title in pairs:
-        if vid not in seen:
-            seen.add(vid)
-            out.append((vid, title))
+    out, seen = [], set()
+    # 標題格式如 2026/11/16(一)...【早晨財經速解讀】；往前找最近的影片代號
+    for m in re.finditer(r'(20\d\d/\d{1,2}/\d{1,2}\(.\)[^"\]{3,150})', text):
+        before = text[max(0, m.start() - 3000):m.start()]
+        ids = re.findall(r'"(?:videoId|contentId)":"([\w-]{11})"', before)
+        if ids and ids[-1] not in seen:
+            seen.add(ids[-1])
+            out.append((ids[-1], m.group(1)))
     if not out:
-        raise RuntimeError(f"頁面沒有影片清單（{len(body)} bytes, consent={'consent.youtube' in text}）")
+        n_ids = len(set(re.findall(r'"(?:videoId|contentId)":"([\w-]{11})"', text)))
+        raise RuntimeError(f"找不到日期標題（{len(body)} bytes, 影片代號數={n_ids}, "
+                           f"含早晨財經={'早晨財經' in text}, consent={'consent.youtube' in text})")
     _remember(*out[0])
     return " | ".join(f"{v}: {t}" for v, t in out[:3])
 
@@ -118,8 +121,8 @@ def gemini_models():
              if "generateContent" in m.get("supportedGenerationMethods", [])]
     flash = [n for n in names if "flash" in n and "image" not in n and "tts" not in n
              and "live" not in n and "lite" not in n and "preview" not in n and "exp" not in n]
-    if flash and not os.environ.get("GEMINI_MODEL"):
-        os.environ["GEMINI_MODEL"] = sorted(flash)[-1]
+    if not os.environ.get("GEMINI_MODEL"):
+        os.environ["GEMINI_MODEL"] = "gemini-flash-latest"
     return f"選用={os.environ.get('GEMINI_MODEL')} / 可用 flash 系列={sorted(flash)}"
 
 
