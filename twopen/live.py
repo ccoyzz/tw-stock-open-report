@@ -90,5 +90,5 @@ def summarize(video_url, api_key):
     response = get_json(_GEMINI, label="Gemini摘要", data=json.dumps(payload).encode(),
                         headers={"Content-Type": "application/json",
                                  "x-goog-api-key": api_key},
-                        timeout=300)
+                        timeout=600)
     return extract_summary(response)

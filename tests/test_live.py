@@ -1,6 +1,9 @@
 import unittest
 from datetime import date
 
+from unittest import mock
+
+from twopen import live
 from twopen.live import (CHANNEL_ID, GEMINI_MODEL, SUMMARY_PROMPT, UPLOADS_PLAYLIST,
                          extract_summary, is_finished, pick_today_video,
                          title_matches_date)
@@ -92,6 +95,22 @@ class ExtractSummaryTest(unittest.TestCase):
 
     def test_unreadable_marker_is_none(self):
         self.assertIsNone(extract_summary(gemini("無法讀取影片內容")))
+
+
+class SummarizeRequestTest(unittest.TestCase):
+    def test_summarize_allows_ten_minutes_and_keeps_key_out_of_url(self):
+        captured = {}
+
+        def fake_get_json(url, **kwargs):
+            captured["url"], captured["kwargs"] = url, kwargs
+            return gemini("重點")
+
+        with mock.patch.object(live, "get_json", fake_get_json):
+            result = live.summarize("https://www.youtube.com/watch?v=a", "KEY123")
+        self.assertEqual(result, "重點")
+        self.assertEqual(captured["kwargs"]["timeout"], 600)
+        self.assertNotIn("KEY123", captured["url"])
+        self.assertEqual(captured["kwargs"]["headers"]["x-goog-api-key"], "KEY123")
 
 
 if __name__ == "__main__":
