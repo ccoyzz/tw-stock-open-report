@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 from twopen.http import FetchError
 from twopen.report import TPE
-from twopen.run import Deps, run
+from twopen.run import Deps, already_complete, run
 
 from .test_quotes import MIS, OFFICIAL, mis_with
 
@@ -268,6 +268,39 @@ class FailureTest(unittest.TestCase):
         self.assertEqual(len(attempts), 2)
         self.assertEqual(attempts[-1]["live"]["status"], "ok")
         self.assertEqual(result["live"]["status"], "ok")
+
+
+class AlreadyCompleteTest(unittest.TestCase):
+    TODAY = at(9, 30).date()
+
+    def doc(self, **changes):
+        base = {"trade_date": "2026-11-16", "market_status": "open", "error": None,
+                "quotes": [{"status": "ok"}] * 4, "live": {"status": "ok"}}
+        base.update(changes)
+        return base
+
+    def test_complete_open_day(self):
+        self.assertTrue(already_complete(self.doc(), self.TODAY))
+
+    def test_closed_day_is_complete(self):
+        self.assertTrue(already_complete(self.doc(market_status="closed", quotes=[],
+                                                  live={"status": "pending"}), self.TODAY))
+
+    def test_other_day_is_not_complete(self):
+        self.assertFalse(already_complete(self.doc(trade_date="2026-11-13"), self.TODAY))
+
+    def test_unfinished_documents_are_not_complete(self):
+        for changes in ({"live": {"status": "pending"}}, {"live": {"status": "title_only"}},
+                        {"live": {"status": "not_found"}}, {"market_status": "error"},
+                        {"quotes": [{"status": "ok"}] * 3 + [{"status": "missing"}]},
+                        {"quotes": []}):
+            self.assertFalse(already_complete(self.doc(**changes), self.TODAY), changes)
+
+    def test_malformed_documents_are_not_complete(self):
+        for bad in (None, {}, [], "x", {"trade_date": "2026-11-16"},
+                    {"trade_date": "2026-11-16", "market_status": "open", "quotes": None,
+                     "live": None}):
+            self.assertFalse(already_complete(bad, self.TODAY))
 
 
 if __name__ == "__main__":

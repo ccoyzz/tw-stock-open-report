@@ -1,4 +1,5 @@
 """進入點：階段一抓開盤數據，階段二等直播結束後產生摘要。所有時間都是台灣時間。"""
+import json
 import os
 import re
 import subprocess
@@ -145,6 +146,29 @@ def run(deps):
     return state.doc
 
 
+def already_complete(doc, today):
+    """今天的資料是否已完整發佈過（重複啟動的執行據此直接結束）。"""
+    if not isinstance(doc, dict) or doc.get("trade_date") != today.isoformat():
+        return False
+    if doc.get("market_status") == "closed":
+        return True
+    quote_list, live_doc = doc.get("quotes"), doc.get("live")
+    return (doc.get("market_status") == "open"
+            and isinstance(quote_list, list) and len(quote_list) == len(quotes.SYMBOLS)
+            and all(isinstance(q, dict) and q.get("status") == "ok" for q in quote_list)
+            and isinstance(live_doc, dict) and live_doc.get("status") == "ok")
+
+
+def _published_document():
+    publish_dir = os.environ.get("TWOPEN_PUBLISH_DIR")
+    if not publish_dir:
+        return None
+    try:
+        return json.loads((Path(publish_dir) / "latest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
 def _git(directory, *args):
     return subprocess.run(["git", "-C", str(directory), *args], capture_output=True, text=True)
 
@@ -174,6 +198,10 @@ def _make_publish(log):
 def main():
     def log(message):
         print(f"[{datetime.now(TPE):%H:%M:%S}] {message}", flush=True)
+
+    if already_complete(_published_document(), datetime.now(TPE).date()):
+        log("今天的資料已完整發佈過，這次執行直接結束")
+        return 0
 
     youtube_key = os.environ.get("YOUTUBE_API_KEY", "")
     gemini_key = os.environ.get("GEMINI_API_KEY", "")

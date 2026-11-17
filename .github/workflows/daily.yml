@@ -1,7 +1,13 @@
 name: daily
 on:
   schedule:
-    - cron: "30 0 * * 1-5" # 台灣時間平日 08:30（GitHub 排程只認 UTC）
+    # GitHub 排程只認 UTC，而且可能延遲很久甚至漏掉，所以排多個啟動時間。
+    # 程式會自己等到台灣時間 09:00:30；今天資料已完整時，後到的執行會直接結束。
+    - cron: "30 23 * * 0-4" # 台灣時間平日 07:30
+    - cron: "0 0 * * 1-5" # 08:00
+    - cron: "30 0 * * 1-5" # 08:30
+    - cron: "50 0 * * 1-5" # 08:50
+    - cron: "10 1 * * 1-5" # 09:10
   workflow_dispatch:
 permissions:
   contents: write
@@ -11,7 +17,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 170
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
