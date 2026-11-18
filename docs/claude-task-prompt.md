@@ -18,7 +18,9 @@
 讀取網頁一律用 WebFetch 工具（若沒有，就用 web-fetch 代理）。任何網址若回報被擋（robots、security block 等），不要改用 curl、python 等其他方式抓取，改用下方列出的備援來源並註明。
 
 第零步：讀取自動抓取程式產生的資料檔
-- 網址：https://raw.githubusercontent.com/ccoyzz/tw-stock-open-report/data/latest.json
+- 網址：https://raw.githubusercontent.com/ccoyzz/tw-stock-open-report/data/YYYY-MM-DD.json ，把 YYYY-MM-DD 換成今天的台灣日期（例如 2026-11-18 就讀 .../data/2026-11-18.json）。
+- 一定要讀當天日期的檔名，不要讀 latest.json：網頁讀取工具會快取同一個網址，latest.json 可能讀到前幾天的舊內容。
+- 讀不到（例如 404）代表今天的資料尚未產生，視為「資料檔不可用」。
 - 這個檔案由一支每天早上自動執行的程式產生，內容是當天的開盤數據（quotes）與游庭皓直播重點（live）。請原樣讀取 JSON 的欄位值，不要改寫數字。
 - 先檢查三件事：(1) 讀取成功；(2) `trade_date` 等於今天的台灣日期；(3) `market_status` 不是 `error`。三項都成立才算「資料檔可用」，否則視為「資料檔不可用」，後面的段落改用各段寫明的備援做法，並在報告中註明「自動資料檔今日不可用」。
 - 若 `error` 欄位有內容，在報告的資料來源區註明。
@@ -80,5 +82,5 @@
 
 注意事項：
 - 只做資訊整理與分析，不提供個人化投資建議或買賣建議；報告結尾加一句「以上為資訊整理，非投資建議」。
-- 報告最後附上「資料來源」清單（含連結），其中包含自動資料檔的網址。
+- 報告最後附上「資料來源」清單（含連結），其中包含今天讀取的自動資料檔網址。
 - 用 SendUserMessage 將完整報告送給使用者。
