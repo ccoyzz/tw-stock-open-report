@@ -1,10 +1,16 @@
 import copy
+import json
+import os
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 from datetime import datetime, timedelta
 
 from twopen.http import FetchError
 from twopen.report import TPE
-from twopen.run import Deps, already_complete, run
+from twopen.run import Deps, _make_publish, already_complete, run
 
 from .test_quotes import MIS, OFFICIAL, mis_with
 
@@ -301,6 +307,34 @@ class AlreadyCompleteTest(unittest.TestCase):
                     {"trade_date": "2026-11-16", "market_status": "open", "quotes": None,
                      "live": None}):
             self.assertFalse(already_complete(bad, self.TODAY))
+
+
+class PublishFilesTest(unittest.TestCase):
+    """讀取端（Claude 的網頁工具）會長時間快取同一個網址，所以每天要有自己的檔名。"""
+
+    def test_publishes_latest_and_dated_file_and_commits_both(self):
+        doc = {"trade_date": "2026-11-18", "generated_at": "2026-11-18T09:01:12+08:00",
+               "market_status": "open", "quotes": [], "live": {"status": "pending"},
+               "error": None}
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "data-branch"
+            repo.mkdir()
+            subprocess.run(["git", "-C", str(repo), "init", "-q"], check=True)
+            for key, value in (("user.name", "t"), ("user.email", "t@example.invalid")):
+                subprocess.run(["git", "-C", str(repo), "config", key, value], check=True)
+            logs = []
+            cwd = os.getcwd()
+            try:
+                os.chdir(tmp)
+                with mock.patch.dict(os.environ, {"TWOPEN_PUBLISH_DIR": str(repo)}):
+                    _make_publish(logs.append)(doc)
+            finally:
+                os.chdir(cwd)
+            for name in ("latest.json", "2026-11-18.json"):
+                self.assertEqual(json.loads((repo / name).read_text(encoding="utf-8")), doc)
+            committed = subprocess.run(["git", "-C", str(repo), "ls-files"],
+                                       capture_output=True, text=True).stdout.split()
+            self.assertEqual(sorted(committed), ["2026-11-18.json", "latest.json"])
 
 
 if __name__ == "__main__":

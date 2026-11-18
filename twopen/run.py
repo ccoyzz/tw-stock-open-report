@@ -180,8 +180,12 @@ def _make_publish(log):
         write_document(doc, Path("out") / "latest.json")
         if not publish_dir:
             return
-        write_document(doc, Path(publish_dir) / "latest.json")
-        _git(publish_dir, "add", "latest.json")
+        # 每天另存一份以日期命名的檔案：讀取端會長時間快取同一個網址，
+        # 新網址才能保證讀到當天的內容。latest.json 保留給舊版提示詞。
+        dated = f"{doc['trade_date']}.json"
+        for name in ("latest.json", dated):
+            write_document(doc, Path(publish_dir) / name)
+        _git(publish_dir, "add", "latest.json", dated)
         if _git(publish_dir, "diff", "--cached", "--quiet").returncode == 0:
             return
         message = f"data: {doc['trade_date']} {doc['generated_at'][11:16]}"
