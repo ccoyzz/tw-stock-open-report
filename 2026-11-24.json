@@ -1,0 +1,68 @@
+{
+  "generated_at": "2026-11-24T15:02:01+08:00",
+  "trade_date": "2026-11-24",
+  "market_status": "open",
+  "quotes": [
+    {
+      "name": "台灣加權指數",
+      "code": "TAIEX",
+      "status": "ok",
+      "reason": null,
+      "prev_close": "36811.89",
+      "open": "39148.91",
+      "change": "+2337.02",
+      "change_pct": "+6.35",
+      "official_prev_close": null,
+      "prev_close_mismatch": false,
+      "source": "證交所即時報價"
+    },
+    {
+      "name": "元大台灣50",
+      "code": "0050",
+      "status": "ok",
+      "reason": null,
+      "prev_close": "87.00",
+      "open": "95.70",
+      "change": "+8.70",
+      "change_pct": "+10.00",
+      "official_prev_close": "87.00",
+      "prev_close_mismatch": false,
+      "source": "證交所即時報價"
+    },
+    {
+      "name": "元大台灣50正2",
+      "code": "00631L",
+      "status": "ok",
+      "reason": null,
+      "prev_close": "22.50",
+      "open": "27.00",
+      "change": "+4.50",
+      "change_pct": "+20.00",
+      "official_prev_close": "22.50",
+      "prev_close_mismatch": false,
+      "source": "證交所即時報價"
+    },
+    {
+      "name": "群益臺灣加權正2",
+      "code": "00685L",
+      "status": "ok",
+      "reason": null,
+      "prev_close": "7.18",
+      "open": "8.61",
+      "change": "+1.43",
+      "change_pct": "+19.92",
+      "official_prev_close": "7.18",
+      "prev_close_mismatch": false,
+      "source": "證交所即時報價"
+    }
+  ],
+  "live": {
+    "status": "pending",
+    "title": null,
+    "url": null,
+    "description": null,
+    "summary": null,
+    "updated_at": null
+  },
+  "error": null
+}
